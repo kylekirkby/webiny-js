@@ -16,6 +16,7 @@ import {
     DELETE_FOLDER,
     GET_FOLDER,
     LIST_FOLDERS,
+    LIST_FOLDERS_RECORDS,
     UPDATE_FOLDER
 } from "~tests/graphql/folder.gql";
 import {
@@ -122,6 +123,9 @@ export const useGraphQlHandler = (params: UseGQLHandlerParams = {}) => {
         },
         async listFolders(variables = {}) {
             return invoke({ body: { query: LIST_FOLDERS, variables } });
+        },
+        async listFoldersSearchRecords(variables = {}) {
+            return invoke({ body: { query: LIST_FOLDERS_RECORDS, variables } });
         },
         async getFolder(variables = {}) {
             return invoke({ body: { query: GET_FOLDER, variables } });

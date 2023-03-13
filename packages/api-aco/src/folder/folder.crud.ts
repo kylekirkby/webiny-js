@@ -47,6 +47,9 @@ export const createFolderCrudMethods = ({ storageOperations }: CreateAcoParams):
         async list(params) {
             return storageOperations.listFolders(params);
         },
+        async listUnion(params) {
+            return storageOperations.listUnion(params);
+        },
         async create(data) {
             await onFolderBeforeCreate.publish({ input: data });
             const folder = await storageOperations.createFolder({ data });

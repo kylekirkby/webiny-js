@@ -6,6 +6,7 @@ import { createOperationsWrapper } from "~/utils/createOperationsWrapper";
 import { getFieldValues } from "~/utils/getFieldValues";
 
 import { AcoFolderStorageOperations } from "./folder.types";
+import { SEARCH_RECORD_MODEL_ID } from "~/record/record.model";
 
 interface AcoCheckExistingFolderParams {
     params: {
@@ -19,12 +20,38 @@ interface AcoCheckExistingFolderParams {
 export const createFolderOperations = (
     params: CreateAcoStorageOperationsParams
 ): AcoFolderStorageOperations => {
-    const { cms } = params;
+    const { cms, security } = params;
 
     const { withModel } = createOperationsWrapper({
         ...params,
         modelName: FOLDER_MODEL_ID
     });
+
+    const getRecordModel = async () => {
+        security.disableAuthorization();
+        const model = await cms.getModel(SEARCH_RECORD_MODEL_ID);
+        security.enableAuthorization();
+        if (!model) {
+            throw new WebinyError(
+                `Could not find "${SEARCH_RECORD_MODEL_ID}" model.`,
+                "MODEL_NOT_FOUND_ERROR"
+            );
+        }
+        return model;
+    };
+
+    const getFolderModel = async () => {
+        security.disableAuthorization();
+        const model = await cms.getModel(FOLDER_MODEL_ID);
+        security.enableAuthorization();
+        if (!model) {
+            throw new WebinyError(
+                `Could not find "${FOLDER_MODEL_ID}" model.`,
+                "MODEL_NOT_FOUND_ERROR"
+            );
+        }
+        return model;
+    };
 
     const getFolder: AcoFolderStorageOperations["getFolder"] = ({ id, slug, type, parentId }) => {
         return withModel(async model => {
@@ -93,6 +120,41 @@ export const createFolderOperations = (
 
                 return [entries.map(entry => getFieldValues(entry, baseFields)), meta];
             });
+        },
+        async listUnion(params) {
+            const folderModel = await getFolderModel();
+            const searchModel = await getRecordModel();
+            security.disableAuthorization();
+
+            const { type, parentId } = params.where;
+
+            const [folders] = await cms.listLatestEntries(folderModel, {
+                ...params,
+                where: {
+                    type,
+                    parentId
+                },
+                limit: -1
+            });
+
+            const [searchRecords, meta] = await cms.listLatestEntries(searchModel, {
+                ...params,
+                where: {
+                    type,
+                    location: {
+                        folderId: parentId || "ROOT"
+                    }
+                }
+            });
+
+            security.enableAuthorization();
+            return [
+                [
+                    ...folders.map(folder => getFieldValues(folder, baseFields)),
+                    ...searchRecords.map(record => getFieldValues(record, baseFields, true))
+                ],
+                meta
+            ];
         },
         createFolder({ data }) {
             return withModel(async model => {

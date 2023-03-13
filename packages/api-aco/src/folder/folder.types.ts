@@ -1,6 +1,8 @@
 import { AcoBaseFields, ListMeta } from "~/types";
 import { Topic } from "@webiny/pubsub/types";
 
+import { SearchRecord } from "../record/record.types";
+
 export interface Folder extends AcoBaseFields {
     title: string;
     slug: string;
@@ -8,12 +10,21 @@ export interface Folder extends AcoBaseFields {
     parentId?: string | null;
 }
 
+export type FolderSearchRecord = Folder | SearchRecord;
+
 export interface ListFoldersWhere {
     type: string;
     parentId?: string | null;
 }
 
 export interface ListFoldersParams {
+    where: ListFoldersWhere;
+    sort?: string[];
+    limit?: number;
+    after?: string | null;
+}
+
+export interface ListFoldersSearchRecordsParams {
     where: ListFoldersWhere;
     sort?: string[];
     limit?: number;
@@ -40,6 +51,7 @@ export interface StorageOperationsGetFolderParams {
 }
 
 export type StorageOperationsListFoldersParams = ListFoldersParams;
+export type StorageOperationsListFoldersSearchRecordsParams = ListFoldersSearchRecordsParams;
 
 export interface StorageOperationsCreateFolderParams {
     data: CreateFolderParams;
@@ -82,6 +94,7 @@ export interface OnFolderAfterDeleteTopicParams {
 export interface AcoFolderCrud {
     get(id: string): Promise<Folder>;
     list(params: ListFoldersParams): Promise<[Folder[], ListMeta]>;
+    listUnion(params: ListFoldersSearchRecordsParams): Promise<[FolderSearchRecord[], ListMeta]>;
     create(data: CreateFolderParams): Promise<Folder>;
     update(id: string, data: UpdateFolderParams): Promise<Folder>;
     delete(id: string): Promise<Boolean>;
@@ -96,6 +109,9 @@ export interface AcoFolderCrud {
 export interface AcoFolderStorageOperations {
     getFolder(params: StorageOperationsGetFolderParams): Promise<Folder>;
     listFolders(params: StorageOperationsListFoldersParams): Promise<[Folder[], ListMeta]>;
+    listUnion(
+        params: StorageOperationsListFoldersSearchRecordsParams
+    ): Promise<[FolderSearchRecord[], ListMeta]>;
     createFolder(params: StorageOperationsCreateFolderParams): Promise<Folder>;
     updateFolder(params: StorageOperationsUpdateFolderParams): Promise<Folder>;
     deleteFolder(params: StorageOperationsDeleteFolderParams): Promise<boolean>;

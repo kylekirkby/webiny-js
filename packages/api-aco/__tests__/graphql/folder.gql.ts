@@ -8,11 +8,42 @@ const DATA_FIELD = /* GraphQL */ `
     }
 `;
 
+const FOLDERS_RECORDS_DATA_FIELD = /* GraphQL */ `
+    {
+        __typename
+        ... on Folder {
+            id
+            title
+            slug
+            type
+            parentId
+        }
+        ... on SearchRecord {
+            id
+            type
+            title
+            content
+            location {
+                folderId
+            }
+            data
+        }
+    }
+`;
+
 const ERROR_FIELD = /* GraphQL */ `
     {
         code
         data
         message
+    }
+`;
+
+const LIST_META_FIELD = /* GraphQL */ `
+    {
+        cursor
+        totalCount
+        hasMoreItems
     }
 `;
 
@@ -54,6 +85,18 @@ export const LIST_FOLDERS = /* GraphQL */ `
         aco {
             listFolders(where: $where) {
                 data ${DATA_FIELD}
+                error ${ERROR_FIELD}
+            }
+        }
+    }
+`;
+
+export const LIST_FOLDERS_RECORDS = /* GraphQL */ `
+    query ListFoldersSearchRecords($where: FoldersListWhereInput!) {
+        aco {
+            listFoldersSearchRecords(where: $where) {
+                data ${FOLDERS_RECORDS_DATA_FIELD}
+                meta ${LIST_META_FIELD}
                 error ${ERROR_FIELD}
             }
         }

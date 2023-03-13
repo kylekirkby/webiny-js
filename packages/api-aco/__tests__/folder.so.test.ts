@@ -1,8 +1,9 @@
 import { folderMocks } from "./mocks/folder.mock";
+import { recordMocks } from "~tests/mocks/record.mock";
 import { useGraphQlHandler } from "./utils/useGraphQlHandler";
 
 describe("`folder` CRUD", () => {
-    const { aco } = useGraphQlHandler();
+    const { aco, search } = useGraphQlHandler();
 
     it("should be able to create, read, update and delete `folders`", async () => {
         // Let's create some folders.
@@ -399,5 +400,101 @@ describe("`folder` CRUD", () => {
                 }
             }
         });
+    });
+
+    it("should query folders and search records together", async () => {
+        // Create Folders
+        const [responseFolder1] = await aco.createFolder({ data: folderMocks.folder1 });
+        const folder1 = responseFolder1.data.aco.createFolder.data;
+
+        console.log("folder1", folder1.id);
+        const [responseFolder2] = await aco.createFolder({
+            data: { ...folderMocks.folder2, parentId: folder1.id }
+        });
+        const folder2 = responseFolder2.data.aco.createFolder.data;
+
+        const [responseFolder3] = await aco.createFolder({
+            data: { ...folderMocks.folder3, parentId: folder1.id }
+        });
+        const folder3 = responseFolder3.data.aco.createFolder.data;
+
+        const [responseFolder4] = await aco.createFolder({
+            data: { ...folderMocks.folder4, parentId: folder1.id }
+        });
+        const folder4 = responseFolder4.data.aco.createFolder.data;
+
+        // Create SearchRecords
+        await search.createRecord({
+            data: recordMocks.recordA,
+            location: { folderId: folder1.id }
+        });
+        await search.createRecord({
+            data: recordMocks.recordB,
+            location: { folderId: folder1.id }
+        });
+        // await search.createRecord({ data: recordMocks.recordC });
+        // await search.createRecord({ data: recordMocks.recordD });
+        // await search.createRecord({ data: recordMocks.recordE });
+
+        const [listResponse] = await aco.listFoldersSearchRecords({
+            where: { type: "page", parentId: folder1.id }
+        });
+        expect(listResponse.data.aco.listFoldersSearchRecords).toEqual(
+            expect.objectContaining({
+                data: expect.arrayContaining([
+                    expect.objectContaining({
+                        __typename: "SearchRecord",
+                        id: "page-b",
+                        type: "page",
+                        title: "Page b",
+                        content: "Lorem ipsum docet",
+                        location: {
+                            folderId: folder1.id
+                        },
+                        data: {
+                            tags: ["tag1"]
+                        }
+                    }),
+                    expect.objectContaining({
+                        __typename: "SearchRecord",
+                        id: "page-a",
+                        type: "page",
+                        title: "Page a",
+                        content: "Sed arcu quam",
+                        location: {
+                            folderId: folder1.id
+                        },
+                        data: {
+                            tags: ["tag1", "tag2"]
+                        }
+                    }),
+                    expect.objectContaining({
+                        __typename: "Folder",
+                        id: folder4.id,
+                        title: "Folder 4",
+                        slug: "folder-4",
+                        type: "page",
+                        parentId: folder1.id
+                    }),
+                    expect.objectContaining({
+                        __typename: "Folder",
+                        id: folder3.id,
+                        title: "Folder 3",
+                        slug: "folder-3",
+                        type: "page",
+                        parentId: folder1.id
+                    }),
+                    expect.objectContaining({
+                        __typename: "Folder",
+                        id: folder2.id,
+                        title: "Folder 2",
+                        slug: "folder-2",
+                        type: "page",
+                        parentId: folder1.id
+                    })
+                ]),
+                error: null
+            })
+        );
     });
 });

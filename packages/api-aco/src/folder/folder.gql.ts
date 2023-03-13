@@ -46,6 +46,14 @@ export const folderSchema = new GraphQLSchemaPlugin<AcoContext>({
             error: AcoError
         }
 
+        union FolderSearchRecord = Folder | SearchRecord
+
+        type FolderSearchRecordListResponse {
+            data: [FolderSearchRecord]
+            error: AcoError
+            meta: AcoMeta
+        }
+
         extend type AcoQuery {
             getFolder(id: ID!): FolderResponse
             listFolders(
@@ -54,6 +62,12 @@ export const folderSchema = new GraphQLSchemaPlugin<AcoContext>({
                 after: String
                 sort: [AcoListSort]
             ): FoldersListResponse
+            listFoldersSearchRecords(
+                where: FoldersListWhereInput!
+                limit: Int
+                after: String
+                sort: [AcoListSort]
+            ): FolderSearchRecordListResponse
         }
 
         extend type AcoMutation {
@@ -63,6 +77,19 @@ export const folderSchema = new GraphQLSchemaPlugin<AcoContext>({
         }
     `,
     resolvers: {
+        FolderSearchRecord: {
+            __resolveType(obj) {
+                // Only SearchRecord has a name field
+                if (obj.content) {
+                    return "SearchRecord";
+                }
+                // Only Folder has a title field
+                if (obj.slug) {
+                    return "Folder";
+                }
+                return null; // GraphQLError is thrown
+            }
+        },
         AcoQuery: {
             getFolder: async (_, { id }, context) => {
                 return resolve(() => context.aco.folder.get(id));
@@ -70,6 +97,14 @@ export const folderSchema = new GraphQLSchemaPlugin<AcoContext>({
             listFolders: async (_, args: any, context) => {
                 try {
                     const [entries, meta] = await context.aco.folder.list(args);
+                    return new ListResponse(entries, meta);
+                } catch (e) {
+                    return new ErrorResponse(e);
+                }
+            },
+            listFoldersSearchRecords: async (_, args: any, context) => {
+                try {
+                    const [entries, meta] = await context.aco.folder.listUnion(args);
                     return new ListResponse(entries, meta);
                 } catch (e) {
                     return new ErrorResponse(e);
