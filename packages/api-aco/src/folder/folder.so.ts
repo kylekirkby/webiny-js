@@ -130,10 +130,12 @@ export const createFolderOperations = (
             const searchModel = await getRecordModel();
             security.disableAuthorization();
 
-            const { type, parentId } = params.where;
+            const { sort, where } = params;
+            const { type, parentId } = where;
 
             const [folders] = await cms.listLatestEntries(folderModel, {
                 ...params,
+                sort: createListSort(sort),
                 where: {
                     type,
                     parentId
@@ -143,6 +145,7 @@ export const createFolderOperations = (
 
             const [searchRecords, meta] = await cms.listLatestEntries(searchModel, {
                 ...params,
+                sort: createListSort(sort),
                 where: {
                     type,
                     location: {

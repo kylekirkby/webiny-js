@@ -26,7 +26,7 @@ export interface ListFoldersParams {
 
 export interface ListFoldersSearchRecordsParams {
     where: ListFoldersWhere;
-    sort?: string[];
+    sort?: ListSort;
     limit?: number;
     after?: string | null;
 }

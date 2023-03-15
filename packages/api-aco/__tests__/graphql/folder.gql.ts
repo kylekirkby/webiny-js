@@ -92,9 +92,9 @@ export const LIST_FOLDERS = /* GraphQL */ `
 `;
 
 export const LIST_FOLDERS_RECORDS = /* GraphQL */ `
-    query ListFoldersSearchRecords($where: FoldersListWhereInput!) {
+    query ListFoldersSearchRecords($where: FoldersListWhereInput!, $limit: Int, $after: String, $sort: AcoSort) {
         aco {
-            listFoldersSearchRecords(where: $where) {
+            listFoldersSearchRecords(where: $where, limit: $limit, after: $after, sort: $sort) {
                 data ${FOLDERS_RECORDS_DATA_FIELD}
                 meta ${LIST_META_FIELD}
                 error ${ERROR_FIELD}

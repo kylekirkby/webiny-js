@@ -407,7 +407,6 @@ describe("`folder` CRUD", () => {
         const [responseFolder1] = await aco.createFolder({ data: folderMocks.folder1 });
         const folder1 = responseFolder1.data.aco.createFolder.data;
 
-        console.log("folder1", folder1.id);
         const [responseFolder2] = await aco.createFolder({
             data: { ...folderMocks.folder2, parentId: folder1.id }
         });
@@ -425,16 +424,20 @@ describe("`folder` CRUD", () => {
 
         // Create SearchRecords
         await search.createRecord({
-            data: recordMocks.recordA,
-            location: { folderId: folder1.id }
+            data: { ...recordMocks.recordA, location: { folderId: folder1.id } }
         });
         await search.createRecord({
-            data: recordMocks.recordB,
-            location: { folderId: folder1.id }
+            data: { ...recordMocks.recordB, location: { folderId: folder1.id } }
         });
-        // await search.createRecord({ data: recordMocks.recordC });
-        // await search.createRecord({ data: recordMocks.recordD });
-        // await search.createRecord({ data: recordMocks.recordE });
+        await search.createRecord({
+            data: { ...recordMocks.recordC, location: { folderId: folder1.id } }
+        });
+        await search.createRecord({
+            data: { ...recordMocks.recordD, location: { folderId: folder1.id } }
+        });
+        await search.createRecord({
+            data: { ...recordMocks.recordE, location: { folderId: folder1.id } }
+        });
 
         const [listResponse] = await aco.listFoldersSearchRecords({
             where: { type: "page", parentId: folder1.id }
