@@ -1,13 +1,14 @@
+import { CmsEntry } from "@webiny/api-headless-cms/types";
 import WebinyError from "@webiny/error";
 
 import { FOLDER_MODEL_ID } from "./folder.model";
 import { baseFields, CreateAcoStorageOperationsParams } from "~/createAcoStorageOperations";
+import { SEARCH_RECORD_MODEL_ID } from "~/record/record.model";
 import { createListSort } from "~/utils/createListSort";
 import { createOperationsWrapper } from "~/utils/createOperationsWrapper";
 import { getFieldValues } from "~/utils/getFieldValues";
 
 import { AcoFolderStorageOperations } from "./folder.types";
-import { SEARCH_RECORD_MODEL_ID } from "~/record/record.model";
 
 interface AcoCheckExistingFolderParams {
     params: {
@@ -130,18 +131,23 @@ export const createFolderOperations = (
             const searchModel = await getRecordModel();
             security.disableAuthorization();
 
-            const { sort, where } = params;
+            const { sort, where, after } = params;
             const { type, parentId } = where;
 
-            const [folders] = await cms.listLatestEntries(folderModel, {
-                ...params,
-                sort: createListSort(sort),
-                where: {
-                    type,
-                    parentId
-                },
-                limit: -1
-            });
+            let folders = [] as CmsEntry[];
+            if (!after) {
+                const [foldersResponse] = await cms.listLatestEntries(folderModel, {
+                    ...params,
+                    sort: createListSort(sort),
+                    where: {
+                        type,
+                        parentId
+                    },
+                    limit: -1
+                });
+
+                folders = foldersResponse;
+            }
 
             const [searchRecords, meta] = await cms.listLatestEntries(searchModel, {
                 ...params,

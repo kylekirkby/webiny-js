@@ -402,7 +402,7 @@ describe("`folder` CRUD", () => {
         });
     });
 
-    it("should query folders and search records together", async () => {
+    it("should list `folders` and `records` together for a given `type` and `folderId`", async () => {
         // Create Folders
         const [responseFolder1] = await aco.createFolder({ data: folderMocks.folder1 });
         const folder1 = responseFolder1.data.aco.createFolder.data;
@@ -422,81 +422,310 @@ describe("`folder` CRUD", () => {
         });
         const folder4 = responseFolder4.data.aco.createFolder.data;
 
-        // Create SearchRecords
-        await search.createRecord({
+        // Create Records
+        const [responseRecordA] = await search.createRecord({
             data: { ...recordMocks.recordA, location: { folderId: folder1.id } }
         });
-        await search.createRecord({
+        const recordA = responseRecordA.data.search.createRecord.data;
+
+        const [responseRecordB] = await search.createRecord({
             data: { ...recordMocks.recordB, location: { folderId: folder1.id } }
         });
-        await search.createRecord({
-            data: { ...recordMocks.recordC, location: { folderId: folder1.id } }
-        });
-        await search.createRecord({
-            data: { ...recordMocks.recordD, location: { folderId: folder1.id } }
-        });
-        await search.createRecord({
-            data: { ...recordMocks.recordE, location: { folderId: folder1.id } }
-        });
+        const recordB = responseRecordB.data.search.createRecord.data;
 
-        const [listResponse] = await aco.listFoldersSearchRecords({
+        const [responseRecordC] = await search.createRecord({
+            data: { ...recordMocks.recordC, location: { folderId: "ROOT" } }
+        });
+        const recordC = responseRecordC.data.search.createRecord.data;
+
+        // List -> type: "page" / parentId: "folder1"
+        const [listPagesFolder1] = await aco.listFoldersSearchRecords({
             where: { type: "page", parentId: folder1.id }
         });
-        expect(listResponse.data.aco.listFoldersSearchRecords).toEqual(
+        expect(listPagesFolder1.data.aco.listFoldersSearchRecords).toEqual(
             expect.objectContaining({
-                data: expect.arrayContaining([
-                    expect.objectContaining({
+                data: [
+                    {
+                        __typename: "Folder",
+                        ...folder4
+                    },
+                    {
+                        __typename: "Folder",
+                        ...folder3
+                    },
+                    {
+                        __typename: "Folder",
+                        ...folder2
+                    },
+                    {
                         __typename: "SearchRecord",
-                        id: "page-b",
-                        type: "page",
-                        title: "Page b",
-                        content: "Lorem ipsum docet",
-                        location: {
-                            folderId: folder1.id
-                        },
-                        data: {
-                            tags: ["tag1"]
-                        }
-                    }),
-                    expect.objectContaining({
+                        ...recordB
+                    },
+                    {
                         __typename: "SearchRecord",
-                        id: "page-a",
-                        type: "page",
-                        title: "Page a",
-                        content: "Sed arcu quam",
-                        location: {
-                            folderId: folder1.id
-                        },
-                        data: {
-                            tags: ["tag1", "tag2"]
-                        }
-                    }),
-                    expect.objectContaining({
+                        ...recordA
+                    }
+                ],
+                error: null,
+                meta: {
+                    cursor: null,
+                    hasMoreItems: false,
+                    totalCount: 2
+                }
+            })
+        );
+
+        // List -> type: "page" / parentId: "ROOT"
+        const [listPagesRoot] = await aco.listFoldersSearchRecords({
+            where: { type: "page", parentId: null }
+        });
+        expect(listPagesRoot.data.aco.listFoldersSearchRecords).toEqual(
+            expect.objectContaining({
+                data: [
+                    {
                         __typename: "Folder",
-                        id: folder4.id,
-                        title: "Folder 4",
-                        slug: "folder-4",
-                        type: "page",
-                        parentId: folder1.id
-                    }),
-                    expect.objectContaining({
+                        ...folder1
+                    },
+                    {
+                        __typename: "SearchRecord",
+                        ...recordC
+                    }
+                ],
+                error: null,
+                meta: {
+                    cursor: null,
+                    hasMoreItems: false,
+                    totalCount: 1
+                }
+            })
+        );
+    });
+
+    it("should list `folders` and `records` with pagination for `records` only", async () => {
+        // Create Folders
+        const [responseFolder1] = await aco.createFolder({ data: folderMocks.folder1 });
+        const folder1 = responseFolder1.data.aco.createFolder.data;
+
+        const [responseFolder2] = await aco.createFolder({
+            data: { ...folderMocks.folder2, parentId: folder1.id }
+        });
+        const folder2 = responseFolder2.data.aco.createFolder.data;
+
+        const [responseFolder3] = await aco.createFolder({
+            data: { ...folderMocks.folder3, parentId: folder1.id }
+        });
+        const folder3 = responseFolder3.data.aco.createFolder.data;
+
+        const [responseFolder4] = await aco.createFolder({
+            data: { ...folderMocks.folder4, parentId: folder1.id }
+        });
+        const folder4 = responseFolder4.data.aco.createFolder.data;
+
+        // Create Records
+        const [responseRecordA] = await search.createRecord({
+            data: { ...recordMocks.recordA, location: { folderId: folder1.id } }
+        });
+        const recordA = responseRecordA.data.search.createRecord.data;
+
+        const [responseRecordB] = await search.createRecord({
+            data: { ...recordMocks.recordB, location: { folderId: folder1.id } }
+        });
+        const recordB = responseRecordB.data.search.createRecord.data;
+
+        const [responseRecordC] = await search.createRecord({
+            data: { ...recordMocks.recordC, location: { folderId: folder1.id } }
+        });
+        const recordC = responseRecordC.data.search.createRecord.data;
+
+        const [list1] = await aco.listFoldersSearchRecords({
+            where: { type: "page", parentId: folder1.id },
+            limit: 2
+        });
+
+        // List folders and records with limit
+        expect(list1.data.aco.listFoldersSearchRecords).toEqual(
+            expect.objectContaining({
+                data: [
+                    {
                         __typename: "Folder",
-                        id: folder3.id,
-                        title: "Folder 3",
-                        slug: "folder-3",
-                        type: "page",
-                        parentId: folder1.id
-                    }),
-                    expect.objectContaining({
+                        ...folder4
+                    },
+                    {
                         __typename: "Folder",
-                        id: folder2.id,
-                        title: "Folder 2",
-                        slug: "folder-2",
-                        type: "page",
-                        parentId: folder1.id
-                    })
-                ]),
-                error: null
+                        ...folder3
+                    },
+                    {
+                        __typename: "Folder",
+                        ...folder2
+                    },
+                    {
+                        __typename: "SearchRecord",
+                        ...recordC
+                    },
+                    {
+                        __typename: "SearchRecord",
+                        ...recordB
+                    }
+                ],
+                error: null,
+                meta: {
+                    cursor: expect.any(String),
+                    hasMoreItems: true,
+                    totalCount: 3
+                }
+            })
+        );
+
+        // Let's use previously returned cursor to continue with pagination.
+        const cursor = list1.data.aco.listFoldersSearchRecords.meta.cursor;
+
+        const [list2] = await aco.listFoldersSearchRecords({
+            where: { type: "page", parentId: folder1.id },
+            limit: 2,
+            after: cursor
+        });
+
+        expect(list2.data.aco.listFoldersSearchRecords).toEqual(
+            expect.objectContaining({
+                data: [
+                    {
+                        __typename: "SearchRecord",
+                        ...recordA
+                    }
+                ],
+                error: null,
+                meta: {
+                    cursor: null,
+                    hasMoreItems: false,
+                    totalCount: 3
+                }
+            })
+        );
+    });
+
+    it("should list `folders` and `records` sorting results according to the params", async () => {
+        // Create Folders
+        const [responseFolder1] = await aco.createFolder({ data: folderMocks.folder1 });
+        const folder1 = responseFolder1.data.aco.createFolder.data;
+
+        const [responseFolder2] = await aco.createFolder({
+            data: { ...folderMocks.folder2, parentId: folder1.id }
+        });
+        const folder2 = responseFolder2.data.aco.createFolder.data;
+
+        const [responseFolder3] = await aco.createFolder({
+            data: { ...folderMocks.folder3, parentId: folder1.id }
+        });
+        const folder3 = responseFolder3.data.aco.createFolder.data;
+
+        const [responseFolder4] = await aco.createFolder({
+            data: { ...folderMocks.folder4, parentId: folder1.id }
+        });
+        const folder4 = responseFolder4.data.aco.createFolder.data;
+
+        // Create Records
+        const [responseRecordA] = await search.createRecord({
+            data: { ...recordMocks.recordA, location: { folderId: folder1.id } }
+        });
+        const recordA = responseRecordA.data.search.createRecord.data;
+
+        const [responseRecordB] = await search.createRecord({
+            data: { ...recordMocks.recordB, location: { folderId: folder1.id } }
+        });
+        const recordB = responseRecordB.data.search.createRecord.data;
+
+        const [responseRecordC] = await search.createRecord({
+            data: { ...recordMocks.recordC, location: { folderId: folder1.id } }
+        });
+        const recordC = responseRecordC.data.search.createRecord.data;
+
+        // List folders and records - Order: title ASC
+        const [responseTitleAsc] = await aco.listFoldersSearchRecords({
+            where: { type: "page", parentId: folder1.id },
+            sort: {
+                title: "ASC"
+            }
+        });
+
+        expect(responseTitleAsc.data.aco.listFoldersSearchRecords).toEqual(
+            expect.objectContaining({
+                data: [
+                    {
+                        __typename: "Folder",
+                        ...folder2
+                    },
+                    {
+                        __typename: "Folder",
+                        ...folder3
+                    },
+                    {
+                        __typename: "Folder",
+                        ...folder4
+                    },
+                    {
+                        __typename: "SearchRecord",
+                        ...recordA
+                    },
+                    {
+                        __typename: "SearchRecord",
+                        ...recordB
+                    },
+                    {
+                        __typename: "SearchRecord",
+                        ...recordC
+                    }
+                ],
+                error: null,
+                meta: {
+                    cursor: null,
+                    hasMoreItems: false,
+                    totalCount: 3
+                }
+            })
+        );
+
+        // List folders and records - Order: title DESC
+        const [responseTitleDesc] = await aco.listFoldersSearchRecords({
+            where: { type: "page", parentId: folder1.id },
+            sort: {
+                title: "DESC"
+            }
+        });
+
+        expect(responseTitleDesc.data.aco.listFoldersSearchRecords).toEqual(
+            expect.objectContaining({
+                data: [
+                    {
+                        __typename: "Folder",
+                        ...folder4
+                    },
+                    {
+                        __typename: "Folder",
+                        ...folder3
+                    },
+                    {
+                        __typename: "Folder",
+                        ...folder2
+                    },
+                    {
+                        __typename: "SearchRecord",
+                        ...recordC
+                    },
+                    {
+                        __typename: "SearchRecord",
+                        ...recordB
+                    },
+                    {
+                        __typename: "SearchRecord",
+                        ...recordA
+                    }
+                ],
+                error: null,
+                meta: {
+                    cursor: null,
+                    hasMoreItems: false,
+                    totalCount: 3
+                }
             })
         );
     });
